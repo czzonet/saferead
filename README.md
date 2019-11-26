@@ -46,7 +46,12 @@ let value2 = safeget(arg=>arg.b.c,a)
 演示运行
 ---
 
-运行`node index.js`
+安装依赖并运行
+
+```sh
+yarn
+node index.js
+```
 
 注意
 ---
