@@ -1,163 +1,55 @@
-typescript脚手架
-=
+安全读取js链式属性模块
+===
 
-中文文档 | [English](README-en.md)
+js在链式调用属性的时候，如果出现undefined，后续调用就会直接报错。针对这个问题，封装了一个安全读取的函数，能够捕获错误不报错。  
+表现为调用链任意位置为空都能够返回默认返回值。  
 
-搭建node+ts环境，用VS code调试。
+变更历史
+---
 
-**原理：** 一些繁重的如gitignore，tsconfig，文件结构等配置。
+- 20191126：提取原项目，使用脚手架，并增加新功能，合成新项目。
 
-**我的一些感想：** 难以置信，竟然需要这么多步骤，如何建立自己的脚手架？目前暂时用手动梳理步骤，使用拷贝即可。
+后续开发
+---
 
-TODO List
---
+- [x] ts重构
+- [ ] npm包
+- [ ] codepen在线演示
 
-- [ ] npm脚本命令行自动生成（类似vue-cli这种） 
-- [ ] task编译前先清理先前编译的dist文件夹，防止污染
+比较其他方法
+---
 
-使用
---
+一般简单的用||和&&就可以了，关键会越写越长。
 
-1. 新项目clone本仓库。
-   ```sh
-   git clone git@github.com:czzonet/typescript-scaffold.git
-   ```
+缺点
+---
 
-2. 重建git
-   ```sh 
-   rm -r ./git 
-   git init
-   git remote add origin [your repository]
-   ```
+也是特性吧，不会根据不同位置的为空的错误时返回不同的返回值。
 
-3. 修改包信息，把package.json里的项目名和作者改为自己的。（可选）
-4. 安装依赖`yarn`
-5. 点击VS code调试或者`npm run dev`即可运行  
-   *注意：`terminal`编译后会自动关闭并且跳转到`debug console`，如果未跳转可以手动切换*
+使用方法
+---
 
-从头构建指南
---
+导入模块，使用时传入构造一个匿名函数返回读取的属性。匿名函数可以使用父作用域变量，也可以使用指定第二个变量配合匿名函数传参。  
+实际应用时，在前端html模板里使用非常方便，如
 
-介绍起手架搭建的细节，可以参考自己去构建。 :white_check_mark:
+`{{safeget(()=>this.data.name)}}`。
 
-1. README.md
-   ```
-   touch README.md
-   ```
-2. git
-   ```
-   git init
-   touch .gitignore
-   ```
-3. tsc
-   ```sh
-   mkdir src
-   touch tsconfig.json
-   ```
-4. yarn
-   ```
-   yarn init
-   ```
+例子：
 
-.gitignore文件内容
---
-排除生成的dist，npm模块，和yarn的锁定文件。注意不需要的文件要及时排除，一旦提交就会永久存在文件记录里，特别对于大型文件，极难排除。
-
-``` 
-dist
-node_modules
-yarn.lock
+```js
+let {safeget} = require('./safeget')
+let a={b:{c:'C'}}
+let value = safeget(()=>a.b.c)
+let value2 = safeget(arg=>arg.b.c,a)
 ```
 
-tsconfig.json 文件内容
---
+演示运行
+---
 
-一些编译选项，没有太多特别。不要过多，自己定义，自己用的舒适。
+运行`node index.js`
 
-```json
-{
-  "compilerOptions": {
-    "target": "es2015",
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "sourceMap": true,
-    "outDir": "dist",
-    "strict": true,
-    "alwaysStrict": true,
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "noImplicitReturns": true,
-    "lib": [
-      "es2015",
-      "es2016"
-    ],
-    "typeRoots": [
-      "./node_modules/@types"
-    ]
-  },
-  "include": [
-    "./src/**/*"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
-}
-```
+注意
+---
 
-vs code 调试
---
-
-先`Terminal->Configure Tasks`添加ts的build任务，再`Debug->Add Configuration`添加node的调试配置，基本是全部默认生成的，只有少部分需要手动指定。
-
-tasks.json 文件内容
---
-
-由于windows下解析路径`\\`的问题，所以要指定`power shell`来运行，最后如下：
-
-```json
-{
-  // See https://go.microsoft.com/fwlink/?LinkId=733558 
-  // for the documentation about the tasks.json format
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "type": "typescript",
-      "tsconfig": "tsconfig.json",
-      "problemMatcher": [
-        "$tsc"
-      ],
-      "options": {
-        "shell": {
-          "executable": "powershell.exe"
-        }
-      }
-    }
-  ]
-}
-```
-
-launch.json 内容
---
-
-手动指定可执行文件位置就可以了，最后如下：
-
-```json
-{
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "type": "node",
-      "request": "launch",
-      "name": "Launch Program",
-      "program": "${workspaceFolder}\\dist\\index.js",
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ]
-    }
-  ]
-}
-```
+注意：闭包的词法作用域，由于对safeget传参一个匿名函数，该匿名函数的词法作用域还是本地的即创建时的词法作用域。而不是safeget里面的。  
+所以，指定参数时，匿名函数构造时也要有参数传入，然后使用该参数。
